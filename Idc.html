@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDC Cayman - Jewelry Tag Printer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #7f1d1d 100%);
+            min-height: 100vh;
+        }
+        
+        .custom-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23fbbf24' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        
+        .tag-preview-container {
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            background: #fef2f2;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        
+        .tag-horizontal {
+            width: 600px;
+            height: 150px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            display: flex;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .tag-half {
+            width: 50%;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 12px 16px;
+        }
+        
+        .tag-left {
+            border-right: 2px dashed #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .tag-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-top: 16px;
+        }
+        
+        .left-text-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .tag-text-large {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.1;
+            margin: 0;
+        }
+        
+        .tag-text-medium {
+            font-size: 20px;
+            font-weight: 500;
+            color: #334155;
+            line-height: 1.2;
+            margin: 0;
+        }
+        
+        .tag-text-small {
+            font-size: 16px;
+            font-weight: 400;
+            color: #64748b;
+            line-height: 1.2;
+            margin: 0;
+        }
+        
+        .right-metal {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1;
+            margin: 0 0 8px 0;
+        }
+        
+        .right-stone-line {
+            font-size: 18px;
+            font-weight: 500;
+            color: #334155;
+            line-height: 1.3;
+            margin: 0;
+        }
+        
+        .right-price {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1;
+            margin: auto 0 0 0;
+        }
+        
+        #qrcode img {
+            width: 90px !important;
+            height: 90px !important;
+            flex-shrink: 0;
+        }
+        
+        @media print {
+            @page { size: auto; margin: 0; }
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+            .no-print { display: none !important; }
+            
+            .tag-horizontal {
+                width: 3.5in !important;
+                height: 0.875in !important;
+                background: white !important;
+                page-break-after: always;
+                margin: 0;
+                padding: 0;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+            
+            .tag-half {
+                height: 0.875in !important;
+                padding: 0.08in 0.12in !important;
+            }
+            
+            .tag-left {
+                border-right: 1px dashed #94a3b8 !important;
+                gap: 0.1in !important;
+            }
+            
+            #qrcode img {
+                width: 0.5in !important;
+                height: 0.5in !important;
+            }
+            
+            .tag-text-large {
+                font-size: 14pt !important;
+                font-weight: 700 !important;
+            }
+            
+            .tag-text-medium {
+                font-size: 11pt !important;
+            }
+            
+            .tag-text-small {
+                font-size: 9pt !important;
+            }
+            
+            .right-metal {
+                font-size: 16pt !important;
+                font-weight: 700 !important;
+                margin-bottom: 0.05in !important;
+            }
+            
+            .right-stone-line {
+                font-size: 10pt !important;
+                line-height: 1.4 !important;
+            }
+            
+            .right-price {
+                font-size: 13pt !important;
+                font-weight: 700 !important;
+                margin-top: auto !important;
+            }
+            
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+        
+        .input-glow:focus {
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+            border-color: #fbbf24;
+        }
+        
+        .inventory-item {
+            transition: all 0.2s ease;
+        }
+        .inventory-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .stone-entry {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+        
+        .scan-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #fbbf24, transparent);
+            animation: scan 2s infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="text-red-100 p-4 md:p-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <div class="flex justify-center items-center gap-3 mb-2">
+                <svg class="w-10 h-10 text-yellow-400" viewBox="0 0 100 100" fill="none">
+                    <path d="M50 5L90 25V65L50 95L10 65V25L50 5Z" stroke="currentColor" stroke-width="3" fill="none"/>
+                    <path d="M50 5L50 35M50 35L90 25M50 35L10 25M50 35L75 65M50 35L25 65" stroke="currentColor" stroke-width="2"/>
+                    <path d="M25 65L50 95L75 65M25 65H75" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <div class="text-left">
+                    <h1 class="text-2xl font-bold text-white">IDC</h1>
+                    <p class="text-xs tracking-widest text-red-200">CAYMAN</p>
+                </div>
+            </div>
+            <p class="text-xs text-red-200">Fold Tag: 3.5" × 7/8" | Left side folds under</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex justify-center mb-6 space-x-2">
+            <button onclick="switchTab('create')" id="tab-create" class="px-4 py-2 rounded-lg bg-yellow-500 text-red-900 font-semibold text-sm">Create Tag</button>
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="px-4 py-2 rounded-lg bg-red-800 text-red-200 font-semibold text-sm border border-red-700">Inventory <span id="inventoryCount" class="bg-yellow-500 text-red-900 text-xs rounded-full px-2 ml-1">0</span></button>
+            <button onclick="switchTab('print')" id="tab-print" class="px-4 py-2 rounded-lg bg-red-800 text-red-200 font-semibold text-sm border border-red-700">Batch Print</button>
+        </div>
+
+        <!-- CREATE TAB -->
+        <div id="view-create">
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- Input Panel -->
+                <div class="bg-red-900/40 rounded-xl p-6 border border-red-700/50">
+                    <h2 class="text-lg font-semibold mb-4 text-yellow-400">Tag Configuration</h2>
+
+                    <!-- Metal Type -->
+                    <div class="mb-4">
+                        <label class="block text-xs text-red-200 mb-2 uppercase font-semibold">Metal Type</label>
+                        <select id="metalType" onchange="updatePreview()" 
+                            class="w-full bg-red-950/80 border border-red-600 rounded-lg px-3 py-2.5 text-sm text-white custom-select input-glow">
+                            <option value="10K">10K</option>
+                            <option value="14K" selected>14K</option>
+                            <option value="18K">18K</option>
+                            <option value="22K">22K</option>
+                            <option value="925">925</option>
+                            <option value="PLAT">PLAT</option>
+                        </select>
+                    </div>
+
+                    <!-- Product Type -->
+                    <div class="mb-4">
+                        <label class="block text-xs text-red-200 mb-2 uppercase font-semibold">Product Type</label>
+                        <select id="productType" onchange="generateCodes()" 
+                            class="w-full bg-red-950/80 border border-red-600 rounded-lg px-3 py-2.5 text-sm text-white custom-select input-glow">
+                            <option value="Ring" selected>Ring</option>
+                            <option value="Earring">Earring</option>
+                            <option value="Pendant">Pendant</option>
+                            <option value="Bracelet">Bracelet</option>
+                            <option value="Bangle">Bangle</option>
+                            <option value="Necklace">Necklace</option>
+                            <option value="Chain">Chain</option>
+                            <option value="Brooch">Brooch</option>
+                            <option value="Set">Set</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <!-- Item Info -->
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                        <div>
+                            <label class="block text-xs text-red-200 mb-1 uppercase">Item Code</label>
+                            <input type="text" id="itemCode" placeholder="ER235" maxlength="10"
+                                class="w-full bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white uppercase input-glow"
+                                oninput="updatePreview()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-red-200 mb-1 uppercase">Serial #</label>
+                            <input type="text" id="serialCode" placeholder="128154WY" maxlength="12"
+                                class="w-full bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white uppercase input-glow"
+                                oninput="updatePreview()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-red-200 mb-1 uppercase">Location</label>
+                            <input type="text" id="locationCode" placeholder="ETH151" maxlength="10"
+                                class="w-full bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white uppercase input-glow"
+                                oninput="updatePreview()">
+                        </div>
+                    </div>
+
+                    <!-- Stones Section -->
+                    <div class="mb-4">
+                        <label class="block text-xs text-red-200 mb-2 uppercase font-semibold">Stones (Add multiple)</label>
+                        <div id="stoneContainer">
+                            <div class="stone-entry">
+                                <select class="stone-type bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white custom-select input-glow w-32">
+                                    <option value="DIA">DIA</option>
+                                    <option value="W-DIA">W-DIA</option>
+                                    <option value="B-DIA">B-DIA</option>
+                                    <option value="P-DIA">P-DIA</option>
+                                    <option value="Y-DIA">Y-DIA</option>
+                                    <option value="TAZ">TAZ</option>
+                                    <option value="SAP">SAP</option>
+                                    <option value="EM">EM</option>
+                                    <option value="RUBY">RUBY</option>
+                                    <option value="TOP">TOP</option>
+                                    <option value="LARI">LARI</option>
+                                    <option value="PERL">PERL</option>
+                                    <option value="OPAL">OPAL</option>
+                                    <option value="GAR">GAR</option>
+                                    <option value="AM">AM</option>
+                                    <option value="CIT">CIT</option>
+                                    <option value="AQ">AQ</option>
+                                    <option value="MOON">MOON</option>
+                                    <option value="ONYX">ONYX</option>
+                                    <option value="JADE">JADE</option>
+                                </select>
+                                <input type="text" class="stone-weight bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white input-glow flex-1" placeholder="1.53ct">
+                                <button onclick="removeStone(this)" class="text-red-400 hover:text-red-300 px-2">×</button>
+                            </div>
+                        </div>
+                        <button onclick="addStone()" class="mt-2 text-yellow-400 text-sm hover:text-yellow-300 flex items-center gap-1">
+                            <span>+</span> Add another stone
+                        </button>
+                    </div>
+
+                    <!-- Cost & Price -->
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                        <div>
+                            <label class="block text-xs text-red-200 mb-1 uppercase">Base Cost</label>
+                            <input type="number" id="cost" placeholder="0.00" step="0.01" 
+                                class="w-full bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white input-glow"
+                                oninput="calculatePrice()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-red-200 mb-1 uppercase">Multiplier</label>
+                            <select id="multiplier" onchange="calculatePrice()" 
+                                class="w-full bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white custom-select input-glow">
+                                <option value="10">10×</option>
+                                <option value="15" selected>15×</option>
+                                <option value="20">20×</option>
+                                <option value="30">30×</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-red-200 mb-1 uppercase">Price</label>
+                            <input type="text" id="finalPrice" readonly
+                                class="w-full bg-red-950/50 border border-red-600 rounded-lg px-3 py-2 text-sm text-yellow-400 font-bold"
+                                value="$0">
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                        <button onclick="saveToInventory()" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2.5 rounded-lg text-sm">Save</button>
+                        <button onclick="printTag()" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-red-900 font-bold py-2.5 rounded-lg text-sm">Print</button>
+                        <button onclick="resetForm()" class="px-4 py-2.5 border border-red-500 rounded-lg text-red-200 hover:text-white text-sm">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Preview Panel -->
+                <div>
+                    <h3 class="text-red-200 text-xs uppercase text-center mb-3">Tag Preview</h3>
+                    
+                    <div class="tag-preview-container">
+                        <div class="flex justify-between text-xs text-red-600 mb-2">
+                            <span>← FOLDS OVER →</span>
+                            <span>3.5" × 7/8"</span>
+                        </div>
+                        
+                        <div id="printArea">
+                            <div class="tag-horizontal" id="previewTag">
+                                <!-- LEFT SIDE -->
+                                <div class="tag-half tag-left">
+                                    <div id="qrcode"></div>
+                                    <div class="left-text-stack">
+                                        <p class="tag-text-large" id="previewItemCode">ER235</p>
+                                        <p class="tag-text-medium" id="previewSerial">128154WY</p>
+                                        <p class="tag-text-small" id="previewLocation">ETH151</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- RIGHT SIDE -->
+                                <div class="tag-half tag-right">
+                                    <p class="right-metal" id="previewMetal">14K</p>
+                                    <div id="previewStones">
+                                        <p class="right-stone-line">DIA 1.53ct</p>
+                                        <p class="right-stone-line">DIA 1.2ct</p>
+                                    </div>
+                                    <p class="right-price" id="previewPrice">$10,838</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3 text-xs text-red-600">
+                            Fold vertically in center • Left side tucks under
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-center text-red-200 text-xs space-y-1">
+                        <p>TSC TTP-343C: 3.5" × 7/8" landscape</p>
+                        <p>Multiple stones supported</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INVENTORY TAB -->
+        <div id="view-inventory" class="hidden">
+            <div class="bg-red-900/40 rounded-xl p-6 border border-red-700/50">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-yellow-400">Inventory</h2>
+                    <div class="flex gap-2">
+                        <div class="relative">
+                            <input type="text" id="searchBarcode" placeholder="Scan item code..." 
+                                class="bg-red-950/80 border border-red-600 rounded-lg pl-8 pr-3 py-2 text-sm text-white w-48 input-glow"
+                                onkeyup="searchInventory(event)">
+                            <div class="scan-line"></div>
+                        </div>
+                        <button onclick="clearSearch()" class="px-3 py-2 border border-red-600 rounded-lg text-sm text-red-200 hover:text-white">Clear</button>
+                    </div>
+                </div>
+                <div id="inventoryList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto">
+                    <div class="col-span-full text-center py-12 text-red-300">No items</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BATCH PRINT TAB -->
+        <div id="view-print" class="hidden">
+            <div class="bg-red-900/40 rounded-xl p-6 border border-red-700/50">
+                <h2 class="text-lg font-semibold mb-4 text-yellow-400">Print Queue</h2>
+                <div id="printQueue" class="space-y-2 mb-4 max-h-[400px] overflow-y-auto">
+                    <div class="text-center py-8 text-red-300 border-2 border-dashed border-red-700 rounded-xl">Queue empty</div>
+                </div>
+                <div class="flex justify-between items-center border-t border-red-700 pt-4">
+                    <span class="text-red-200 text-sm"><span id="queueCount">0</span> items</span>
+                    <div class="flex gap-2">
+                        <button onclick="clearQueue()" class="px-4 py-2 border border-red-500/50 text-red-300 rounded-lg text-sm">Clear</button>
+                        <button onclick="printBatch()" class="px-6 py-2 bg-yellow-500 text-red-900 font-bold rounded-lg text-sm">Print All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden print container -->
+    <div id="printContainer" style="display: none;"></div>
+
+    <script>
+        let inventory = JSON.parse(localStorage.getItem('idcTagInventory')) || [];
+        let printQueue = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            generateCodes();
+            calculatePrice();
+            updateInventoryDisplay();
+            updateStonePreview();
+        });
+
+        function switchTab(tab) {
+            ['create', 'inventory', 'print'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('bg-yellow-500', 'text-red-900');
+                document.getElementById(`tab-${t}`).classList.add('bg-red-800', 'text-red-200', 'border', 'border-red-700');
+            });
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.remove('bg-red-800', 'text-red-200', 'border', 'border-red-700');
+            document.getElementById(`tab-${tab}`).classList.add('bg-yellow-500', 'text-red-900');
+            
+            if (tab === 'inventory') updateInventoryDisplay();
+            if (tab === 'print') updatePrintQueue();
+        }
+
+        function addStone() {
+            const container = document.getElementById('stoneContainer');
+            const entry = document.createElement('div');
+            entry.className = 'stone-entry';
+            entry.innerHTML = `
+                <select class="stone-type bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white custom-select input-glow w-32">
+                    <option value="DIA">DIA</option>
+                    <option value="W-DIA">W-DIA</option>
+                    <option value="B-DIA">B-DIA</option>
+                    <option value="P-DIA">P-DIA</option>
+                    <option value="Y-DIA">Y-DIA</option>
+                    <option value="TAZ">TAZ</option>
+                    <option value="SAP">SAP</option>
+                    <option value="EM">EM</option>
+                    <option value="RUBY">RUBY</option>
+                    <option value="TOP">TOP</option>
+                    <option value="LARI">LARI</option>
+                    <option value="PERL">PERL</option>
+                    <option value="OPAL">OPAL</option>
+                    <option value="GAR">GAR</option>
+                    <option value="AM">AM</option>
+                    <option value="CIT">CIT</option>
+                    <option value="AQ">AQ</option>
+                    <option value="MOON">MOON</option>
+                    <option value="ONYX">ONYX</option>
+                    <option value="JADE">JADE</option>
+                </select>
+                <input type="text" class="stone-weight bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white input-glow flex-1" placeholder="1.2ct">
+                <button onclick="removeStone(this)" class="text-red-400 hover:text-red-300 px-2">×</button>
+            `;
+            container.appendChild(entry);
+            
+            entry.querySelector('.stone-type').addEventListener('change', updateStonePreview);
+            entry.querySelector('.stone-weight').addEventListener('input', updateStonePreview);
+        }
+
+        function removeStone(btn) {
+            const entries = document.querySelectorAll('.stone-entry');
+            if (entries.length > 1) {
+                btn.closest('.stone-entry').remove();
+                updateStonePreview();
+            }
+        }
+
+        function getStones() {
+            const entries = document.querySelectorAll('.stone-entry');
+            const stones = [];
+            entries.forEach(entry => {
+                const type = entry.querySelector('.stone-type').value;
+                const weight = entry.querySelector('.stone-weight').value.trim();
+                if (weight) {
+                    stones.push(`${type} ${weight}`);
+                }
+            });
+            return stones;
+        }
+
+        function updateStonePreview() {
+            const stones = getStones();
+            const container = document.getElementById('previewStones');
+            
+            if (stones.length === 0) {
+                container.innerHTML = '<p class="right-stone-line">No stones</p>';
+            } else {
+                container.innerHTML = stones.map(s => `<p class="right-stone-line">${s}</p>`).join('');
+            }
+        }
+
+        function generateCodes() {
+            const prod = document.getElementById('productType').value.substring(0, 2).toUpperCase();
+            const random = Math.floor(Math.random() * 900) + 100;
+            const itemCode = `${prod}${random}`;
+            const serial = Math.random().toString(36).substring(2, 10).toUpperCase();
+            const location = `ETH${Math.floor(Math.random() * 900) + 100}`;
+            
+            document.getElementById('itemCode').value = itemCode;
+            document.getElementById('serialCode').value = serial;
+            document.getElementById('locationCode').value = location;
+            
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const itemCode = document.getElementById('itemCode').value || 'ER235';
+            const serial = document.getElementById('serialCode').value || '128154WY';
+            const location = document.getElementById('locationCode').value || 'ETH151';
+            const metal = document.getElementById('metalType').value;
+            const price = document.getElementById('finalPrice').value;
+            
+            document.getElementById('previewItemCode').textContent = itemCode;
+            document.getElementById('previewSerial').textContent = serial;
+            document.getElementById('previewLocation').textContent = location;
+            document.getElementById('previewMetal').textContent = metal;
+            document.getElementById('previewPrice').textContent = price;
+            
+            updateStonePreview();
+            
+            const qrcodeDiv = document.getElementById('qrcode');
+            qrcodeDiv.innerHTML = '';
+            new QRCode(qrcodeDiv, {
+                text: `${itemCode}-${serial}`,
+                width: 90,
+                height: 90,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        function calculatePrice() {
+            const cost = parseFloat(document.getElementById('cost').value) || 0;
+            const multiplier = parseInt(document.getElementById('multiplier').value) || 15;
+            const price = Math.round(cost * multiplier);
+            document.getElementById('finalPrice').value = '$' + price.toLocaleString();
+            updatePreview();
+        }
+
+        function saveToInventory() {
+            const data = {
+                itemCode: document.getElementById('itemCode').value,
+                serialCode: document.getElementById('serialCode').value,
+                locationCode: document.getElementById('locationCode').value,
+                metalType: document.getElementById('metalType').value,
+                productType: document.getElementById('productType').value,
+                stones: getStones(),
+                cost: document.getElementById('cost').value,
+                price: document.getElementById('finalPrice').value,
+                createdAt: new Date().toISOString()
+            };
+            
+            const existing = inventory.findIndex(i => i.itemCode === data.itemCode);
+            if (existing >= 0) inventory[existing] = data;
+            else inventory.push(data);
+            
+            localStorage.setItem('idcTagInventory', JSON.stringify(inventory));
+            updateInventoryCount();
+            showNotification('Saved');
+            generateCodes();
+        }
+
+        function updateInventoryDisplay() {
+            const container = document.getElementById('inventoryList');
+            document.getElementById('inventoryCount').textContent = inventory.length;
+            
+            if (inventory.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center py-12 text-red-300">No items</div>';
+                return;
+            }
+            
+            container.innerHTML = inventory.map(item => `
+                <div class="bg-red-950/50 border border-red-700 rounded-lg p-3 inventory-item" data-code="${item.itemCode.toLowerCase()}">
+                    <div class="flex justify-between items-start mb-1">
+                        <div>
+                            <p class="font-bold text-white text-sm">${item.itemCode}</p>
+                            <p class="text-xs text-red-200">${item.metalType} • ${item.stones.join(', ')}</p>
+                        </div>
+                        <p class="text-yellow-400 font-bold">${item.price}</p>
+                    </div>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="loadItem('${item.itemCode}')" class="flex-1 bg-red-800 hover:bg-red-700 text-xs py-1.5 rounded">Edit</button>
+                        <button onclick="addToQueue('${item.itemCode}')" class="flex-1 bg-yellow-600/20 text-yellow-400 text-xs py-1.5 rounded">+ Queue</button>
+                        <button onclick="deleteItem('${item.itemCode}')" class="px-2 bg-red-500/10 text-red-400 rounded"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function searchInventory(e) {
+            if (e.key !== 'Enter') return;
+            const query = document.getElementById('searchBarcode').value.toLowerCase();
+            document.querySelectorAll('.inventory-item').forEach(item => {
+                const code = item.getAttribute('data-code');
+                item.style.display = code.includes(query) ? 'block' : 'none';
+            });
+        }
+
+        function clearSearch() {
+            document.getElementById('searchBarcode').value = '';
+            updateInventoryDisplay();
+        }
+
+        function loadItem(code) {
+            const item = inventory.find(i => i.itemCode === code);
+            if (!item) return;
+            
+            document.getElementById('itemCode').value = item.itemCode;
+            document.getElementById('serialCode').value = item.serialCode;
+            document.getElementById('locationCode').value = item.locationCode;
+            document.getElementById('metalType').value = item.metalType;
+            document.getElementById('productType').value = item.productType;
+            document.getElementById('cost').value = item.cost;
+            
+            document.getElementById('stoneContainer').innerHTML = '';
+            if (item.stones && item.stones.length > 0) {
+                item.stones.forEach((stone, idx) => {
+                    const parts = stone.split(' ');
+                    const type = parts[0];
+                    const weight = parts.slice(1).join(' ');
+                    
+                    if (idx === 0) {
+                        const firstEntry = document.querySelector('.stone-entry');
+                        firstEntry.querySelector('.stone-type').value = type;
+                        firstEntry.querySelector('.stone-weight').value = weight;
+                    } else {
+                        addStone();
+                        const entries = document.querySelectorAll('.stone-entry');
+                        const lastEntry = entries[entries.length - 1];
+                        lastEntry.querySelector('.stone-type').value = type;
+                        lastEntry.querySelector('.stone-weight').value = weight;
+                    }
+                });
+            }
+            
+            calculatePrice();
+            updateStonePreview();
+            switchTab('create');
+        }
+
+        function deleteItem(code) {
+            if (!confirm('Delete?')) return;
+            inventory = inventory.filter(i => i.itemCode !== code);
+            localStorage.setItem('idcTagInventory', JSON.stringify(inventory));
+            updateInventoryDisplay();
+        }
+
+        function addToQueue(code) {
+            const item = inventory.find(i => i.itemCode === code);
+            if (!item || printQueue.find(i => i.itemCode === code)) return;
+            printQueue.push(item);
+            updatePrintQueue();
+            showNotification('Added to queue');
+        }
+
+        function updatePrintQueue() {
+            const container = document.getElementById('printQueue');
+            document.getElementById('queueCount').textContent = printQueue.length;
+            
+            if (printQueue.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-red-300 border-2 border-dashed border-red-700 rounded-xl">Queue empty</div>';
+                return;
+            }
+            
+            container.innerHTML = printQueue.map(item => `
+                <div class="flex justify-between items-center bg-red-950/50 border border-red-700 rounded-lg p-3">
+                    <div>
+                        <p class="font-bold text-white text-sm">${item.itemCode}</p>
+                        <p class="text-xs text-red-200">${item.metalType} • ${item.stones.join(', ')} • ${item.price}</p>
+                    </div>
+                    <button onclick="removeFromQueue('${item.itemCode}')" class="text-red-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                </div>
+            `).join('');
+        }
+
+        function removeFromQueue(code) {
+            printQueue = printQueue.filter(i => i.itemCode !== code);
+            updatePrintQueue();
+        }
+
+        function clearQueue() {
+            printQueue = [];
+            updatePrintQueue();
+        }
+
+        function printTag() {
+            const data = {
+                itemCode: document.getElementById('itemCode').value,
+                serialCode: document.getElementById('serialCode').value,
+                locationCode: document.getElementById('locationCode').value,
+                metalType: document.getElementById('metalType').value,
+                stones: getStones(),
+                price: document.getElementById('finalPrice').value
+            };
+            
+            document.getElementById('printContainer').innerHTML = generatePrintHTML(data);
+            setTimeout(() => window.print(), 100);
+        }
+
+        function printBatch() {
+            if (printQueue.length === 0) return;
+            const container = document.getElementById('printContainer');
+            container.innerHTML = printQueue.map(item => generatePrintHTML(item)).join('');
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => {
+                    container.innerHTML = '';
+                    clearQueue();
+                    showNotification(`Printed ${printQueue.length} tags`);
+                }, 1000);
+            }, 500);
+        }
+
+        function generatePrintHTML(item) {
+            const stonesHtml = item.stones.map(s => `<p style="font-size: 10pt; font-weight: 500; margin: 0; line-height: 1.4; color: black;">${s}</p>`).join('');
+            
+            return `
+                <div style="width: 3.5in; height: 0.875in; display: flex; font-family: Arial, sans-serif; page-break-after: always; background: white;">
+                    <!-- LEFT SIDE -->
+                    <div style="width: 1.75in; height: 0.875in; border-right: 1px dashed #94a3b8; display: flex; align-items: center; gap: 0.1in; padding: 0.08in 0.12in; box-sizing: border-box;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(item.itemCode + '-' + item.serialCode)}" 
+                             style="width: 0.5in; height: 0.5in; flex-shrink: 0;" />
+                        <div style="display: flex; flex-direction: column; gap: 0.02in;">
+                            <p style="font-size: 14pt; font-weight: 700; margin: 0; line-height: 1.1; color: black;">${item.itemCode}</p>
+                            <p style="font-size: 11pt; margin: 0; line-height: 1.2; color: black;">${item.serialCode}</p>
+                            <p style="font-size: 9pt; margin: 0; line-height: 1.2; color: #64748b;">${item.locationCode}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- RIGHT SIDE -->
+                    <div style="width: 1.75in; height: 0.875in; display: flex; flex-direction: column; padding: 0.1in 0.12in; box-sizing: border-box;">
+                        <p style="font-size: 16pt; font-weight: 700; margin: 0 0 0.05in 0; line-height: 1; color: black;">${item.metalType}</p>
+                        <div style="flex: 1;">${stonesHtml}</div>
+                        <p style="font-size: 13pt; font-weight: 700; margin: auto 0 0 0; line-height: 1; color: black;">${item.price}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetForm() {
+            document.getElementById('cost').value = '';
+            document.getElementById('multiplier').value = '15';
+            document.getElementById('metalType').value = '14K';
+            document.getElementById('productType').value = 'Ring';
+            
+            document.getElementById('stoneContainer').innerHTML = `
+                <div class="stone-entry">
+                    <select class="stone-type bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white custom-select input-glow w-32">
+                        <option value="DIA">DIA</option>
+                        <option value="W-DIA">W-DIA</option>
+                        <option value="B-DIA">B-DIA</option>
+                        <option value="P-DIA">P-DIA</option>
+                        <option value="Y-DIA">Y-DIA</option>
+                        <option value="TAZ">TAZ</option>
+                        <option value="SAP">SAP</option>
+                        <option value="EM">EM</option>
+                        <option value="RUBY">RUBY</option>
+                        <option value="TOP">TOP</option>
+                        <option value="LARI">LARI</option>
+                        <option value="PERL">PERL</option>
+                        <option value="OPAL">OPAL</option>
+                        <option value="GAR">GAR</option>
+                        <option value="AM">AM</option>
+                        <option value="CIT">CIT</option>
+                        <option value="AQ">AQ</option>
+                        <option value="MOON">MOON</option>
+                        <option value="ONYX">ONYX</option>
+                        <option value="JADE">JADE</option>
+                    </select>
+                    <input type="text" class="stone-weight bg-red-950/80 border border-red-600 rounded-lg px-3 py-2 text-sm text-white input-glow flex-1" placeholder="1.53ct">
+                    <button onclick="removeStone(this)" class="text-red-400 hover:text-red-300 px-2">×</button>
+                </div>
+            `;
+            
+            document.querySelector('.stone-type').addEventListener('change', updateStonePreview);
+            document.querySelector('.stone-weight').addEventListener('input', updateStonePreview);
+            
+            generateCodes();
+            calculatePrice();
+        }
+
+        function updateInventoryCount() {
+            document.getElementById('inventoryCount').textContent = inventory.length;
+        }
+
+        function showNotification(msg) {
+            const div = document.createElement('div');
+            div.className = 'fixed bottom-4 right-4 px-4 py-2 bg-yellow-600 text-white rounded-lg shadow-lg z-50 text-sm';
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2000);
+        }
+        
+        document.querySelector('.stone-type').addEventListener('change', updateStonePreview);
+        document.querySelector('.stone-weight').addEventListener('input', updateStonePreview);
+    </script>
+</body>
+</html>
